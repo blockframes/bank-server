@@ -1,0 +1,64 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
+  <CstmrCdtTrfInitn>
+    <GrpHdr>
+      <MsgId>LOTR</MsgId>
+      <CreDtTm>2020-01-28T15:12:22</CreDtTm>
+      <NbOfTxs>1</NbOfTxs>
+      <CtrlSum>12.3</CtrlSum>
+      <InitgPty>
+        <Nm>Cascade8</Nm>
+      </InitgPty>
+    </GrpHdr>
+    <PmtInf>
+      <PmtInfId>LOTR</PmtInfId>
+      <PmtMtd>TRF</PmtMtd>
+      <BtchBookg>false</BtchBookg>
+      <NbOfTxs>1</NbOfTxs>
+      <CtrlSum>12.3</CtrlSum>
+      <PmtTpInf>
+        <SvcLvl>
+          <Cd>SEPA</Cd>
+        </SvcLvl>
+      </PmtTpInf>
+      <ReqdExctnDt>2020-01-28</ReqdExctnDt>
+      <Dbtr>
+        <Nm>Cascade8</Nm>
+      </Dbtr>
+      <DbtrAcct>
+        <Id>
+          <IBAN>FR7630788001000889066000366</IBAN>
+        </Id>
+      </DbtrAcct>
+      <DbtrAgt>
+        <FinInstnId>
+          <BIC>NSMBFRPPXXX</BIC>
+        </FinInstnId>
+      </DbtrAgt>
+      <ChrgBr>SLEV</ChrgBr>
+      <CdtTrfTxInf>
+        <PmtId>
+          <EndToEndId>LOTR</EndToEndId>
+        </PmtId>
+        <Amt>
+          <InstdAmt Ccy="EUR">12.3</InstdAmt>
+        </Amt>
+        <CdtrAgt>
+          <FinInstnId>
+            <BIC>NSMBFRPPXXX</BIC>
+          </FinInstnId>
+        </CdtrAgt>
+        <Cdtr>
+          <Nm>Pulsar</Nm>
+        </Cdtr>
+        <CdtrAcct>
+          <Id>
+            <IBAN>FR7630788001000889066000463</IBAN>
+          </Id>
+        </CdtrAcct>
+      </CdtTrfTxInf>
+    </PmtInf>
+  </CstmrCdtTrfInitn>
+</Document>
+  
