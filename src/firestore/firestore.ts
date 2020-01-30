@@ -1,16 +1,9 @@
 
 import { initializeApp } from 'firebase';
+import { firebaseCredentials } from '../environment/env';
 
 function getFirestore() {
-  const app = initializeApp({ // TODO GET CONFIG FROM ENV
-    apiKey: 
-    authDomain: 
-    databaseURL: 
-    projectId: 
-    storageBucket: 
-    messagingSenderId: 
-    appId: 
-  });
+  const app = initializeApp(firebaseCredentials);
   return app.firestore();
 }
 

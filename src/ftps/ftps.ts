@@ -3,6 +3,7 @@ import { promisify } from 'util';
 import { exec } from 'child_process';
 import { default as FTPS} from 'ftps';
 import { receiptFolder } from '../storage/storage';
+import { ftpsCredentials } from '../environment/env';
 
 const asyncExec = promisify(exec);
 
@@ -16,15 +17,7 @@ export async function checkFtpsProcess() {
 }
 
 function getFtps() {
-  // ! TODO CHECK ENV/CONFIG
-  return new FTPS({
-    host: // ! TODO GET FROM ENV
-    username: // ! TODO GET FROM ENV
-    password: // ! TODO GET FROM ENV
-    protocol: 'ftps',
-    port: 21,
-    additionalLftpCommands: 'set ssl:verify-certificate no'
-  })
+  return new FTPS(ftpsCredentials)
 }
 
 export async function checkFtpsConnection() {

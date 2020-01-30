@@ -85,7 +85,7 @@ export function createPaymentXML(from: paymentParty, to: paymentParty, amount: s
     <PmtInf>
       <PmtInfId>${reference}</PmtInfId>
       <PmtMtd>TRF</PmtMtd>
-      <BtchBookg>false</BtchBookg>
+      <BtchBookg>true</BtchBookg>${''/* BATCH BOOKING */}
       <NbOfTxs>1</NbOfTxs>
       <CtrlSum>${amount}</CtrlSum>
       <PmtTpInf>
