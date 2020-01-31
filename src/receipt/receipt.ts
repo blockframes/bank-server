@@ -1,31 +1,26 @@
-import { getRIB } from "../utils/utils";
+import { getRIB, parseInterBankOperationCode } from "../utils/utils"; // TODO why is this in utils ? is it use elsewhere ? if not move ii to this file
 
 interface Balance {
-  account: string; // iban
+  account: string;
   amount: number;
   date: Date;
 }
 
-interface Credit {
-  from: string; // iban
+interface Movement {
+  otherPartyRIB: string;
+  otherPartyName: string;
   amount: number;
+  isCredit: boolean;
   date: Date;
-  ref: string;
-}
-
-interface Debit {
-  to: string; // iban
-  amount: number;
-  date: Date;
-  ref: string;
+  type: string;
+  refs: string[];
 }
 
 export interface BankAccount {
-  account: string // iban
+  account: string
   balance: number;
   lastUpdate: Date;
-  credits: Credit[];
-  debits: Debit[];
+  movements: Movement[];
 }
 
 /**
@@ -48,6 +43,8 @@ function parseDate(dateDDMMYY: string) {
 
   // ! Because the CFONB format doesn't support the full year, we will assume that the date is from the current century,
   // ! i.e. if the value is '19' we will assume it means '2019'
+  // ! This could result in an error on the first day of every new century
+  // ! (I hope for the devs of the year 2100 that this format will not be used anymore)
   const now = new Date();
   const century = now.getFullYear().toString().substr(0, 2); // 2019 -> '20'
 
@@ -56,7 +53,7 @@ function parseDate(dateDDMMYY: string) {
 
   // assert that the date is valid
   if (Number.isNaN(timestamp)) {
-    throw new Error(`Invalid date : 20${decade}-${month}-${day} cannot be converted into a valid date!`);
+    throw new Error(`Invalid date : ${century}${decade}-${month}-${day} cannot be converted into a valid date!`);
   }
 
   // build an return date object
@@ -99,7 +96,7 @@ function parseAmount(rawAmount: string, numberOfDecimalDigits:string) {
     throw new Error(`Invalid Amount : Decimals part of the amount (${decimalPart}) cannot be parsed into a number!`);
   }
 
-  // parse decimal code
+  // parse decimal code as defined in the spec
   let lastDecimal = 0;
   let isPositive = true;
   switch (decimalCode) {
@@ -141,9 +138,14 @@ function parseAmount(rawAmount: string, numberOfDecimalDigits:string) {
   return numberAmount;
 }
 
-
-
+/**
+ * Parse an "Old Balance" (01) or a "New Balance" (07) CFONB 120 record into a Balance object.
+ * This function **doesn't perform any check** on the input line and on the result.
+ * @param line a string of 120 chars in the CFONB 120 format
+ */
 function parseBalanceRecord(line: string): Balance {
+
+  // get record's field according to the spec
   const bankCode = line.substr(2, 5);
   const reservedArea0 = line.substr(7, 4);
   const counterCode = line.substr(11, 5);
@@ -167,7 +169,14 @@ function parseBalanceRecord(line: string): Balance {
   }
 }
 
-function parseMovementRecord(line: string) {
+/**
+ * Parse a "Movement" (04) CFONB 120 record into a Movement object.
+ * This function only check if the sign of the amount match the operation type (debit must be negative / credit must be positive).
+ * @param line a string of 120 chars in the CFONB 120 format
+ */
+function parseMovementRecord(line: string): Movement {
+
+  // get record's field according to the spec
   const bankCode = line.substr(2, 5);
   const internalOperationCode = line.substr(7, 4);
   const counterCode = line.substr(11, 5);
@@ -175,7 +184,7 @@ function parseMovementRecord(line: string) {
   const numberOfDecimalDigits = line.substr(19, 1);
   const reservedArea0 = line.substr(20, 1);
   const account = line.substr(21, 11);
-  const interBankOperationCode = line.substr(32, 2);
+  const interBankOperationCode = parseInterBankOperationCode(line.substr(32, 2));
   const dateOfAccounting = parseDate(line.substr(34, 6));
   const rejectionCode = line.substr(40, 2);
   const dateOfValue = parseDate(line.substr(42, 6));
@@ -184,114 +193,149 @@ function parseMovementRecord(line: string) {
   const operationNumber = line.substr(81, 7);
   const exonerationIndex = line.substr(88, 1);
   const unavailabilityIndex = line.substr(89, 1);
-  const rawAmount = line.substr(90, 14);
-  const reservedArea2 = line.substr(104, 16);
+  const amount = parseAmount(line.substr(90, 14), numberOfDecimalDigits);
+  const reference = line.substr(104, 16);
 
-  console.log(
-    bankCode,
-    internalOperationCode,
-    counterCode,
-    currency,
-    numberOfDecimalDigits,
-    account,
-    interBankOperationCode,
-    dateOfAccounting,
-    rejectionCode,
-    dateOfValue,
-    label,
-    operationNumber,
-    exonerationIndex,
-    unavailabilityIndex,
-    rawAmount
-  );
+  const rib = getRIB(bankCode, counterCode, account);
+
+  const isCredit = (Math.sign(amount) === 1 || Math.sign(amount) === 0)
+  if (interBankOperationCode.isCredit !== undefined && interBankOperationCode.isCredit !== isCredit) {
+    throw new Error(`Incoherent Record : the sign of the movement's amount doesn't match the operation type (i.e. you can't receive a negative amount or send a positive amount) !`);
+  }
+  
+  return {
+    otherPartyRIB: rib,
+    otherPartyName: label,
+    amount,
+    isCredit,
+    date: dateOfAccounting,
+    type: interBankOperationCode.type,
+    refs: [reference]
+  };
 }
 
+/**
+ * Extract references from a "Complementary Movement" (05) CFONB 120 record.
+ * This function **doesn't perform any check** on the input line and on the result.
+ * @param line a string of 120 chars in the CFONB 120 format
+ */
 function parseComplementaryMovementRecord(line: string) {
-
-  // * SAME AS MOVEMENT RECORD
-  // const bankCode = line.substr(2, 5);
-  // const internalOperationCode = line.substr(7, 4);
-  // const counterCode = line.substr(11, 5);
-  // const currency = line.substr(16, 3);
-  // const numberOfDecimalDigits = line.substr(19, 1);
-  // const reservedArea0 = line.substr(20, 1);
-  // const account = line.substr(21, 11);
-  // const interBankOperationCode = line.substr(32, 2);
-  // const dateOfAccountingDDMMYY = line.substr(34, 6);
-  // const reservedArea1 = line.substr(40, 5);
-  // * SAME AS MOVEMENT RECORD
-
+  // get record's field according to the spec
   const complementaryCode = line.substr(46, 3);
   const complementaryInfo = line.substr(48, 70);
   const reservedArea2 = line.substr(118, 2);
 
-  console.log(complementaryCode, complementaryInfo);
+  return [complementaryCode, complementaryInfo];
 }
 
-function parseRecord(line: string): Balance | Credit | Debit {
-  const recordCode = line.substr(0, 2);
+/**
+ * This function assert than the old balance + every credit - every debit is equal to the new balance.
+ * @param bankAccount a BankAccount object containing all the debit/credit along with the new balance
+ * @param oldAmount a number representing the old balance of the account
+ */
+function assertBalances(bankAccount: BankAccount, oldAmount: number) {
+  bankAccount.movements.forEach(credit => oldAmount += credit.amount);
 
-  switch(recordCode) {
-    case '01':
-      return parseBalanceRecord(line);
-    case '04':
-      return parseMovementRecord(line);
-    case '05':
-      return parseComplementaryMovementRecord(line);
-    case '07':
-      return parseBalanceRecord(line);
-    default:
-      throw new Error(`Invalid Record Code : ${recordCode}`);
-  }
-}
-
-export function parseBankReceipt(receipt: string): BankAccount {
-  const rawLines = receipt.split('\n');
-  const lines = rawLines.filter(line => line.length !== 120);
-
-  const balances: Balance[] = [];
-  const credits: Credit[] = [];
-  const debits: Debit[] = [];
-  lines.map(line => {
-    const record = parseRecord(line);
-    if ('account' in record) {
-      balances.push(record);
-    } else if ('from' in record) {
-      credits.push(record);
-    } else {
-      debits.push(record);
-    }
-  });
-
-  if (balances.length !== 2) {
-    throw new Error('Invalid Receipt : The bank receipt must have exactly one old balance and one new balance!');
-  }
-  if (balances[0].account !== balances[1].account) {
-    throw new Error('Invalid Receipt : The old balance record and the new balance record must refer to the same account!');
-  }
-
-  let oldBalance = balances[1].amount;
-
-  const bankAccount: BankAccount = {
-    account: balances[0].account,
-    balance: balances[0].amount,
-    lastUpdate: balances[0].date,
-    credits,
-    debits
-  }
-
-  if (bankAccount.lastUpdate < balances[1].date) {
-    oldBalance = balances[0].amount;
-    bankAccount.lastUpdate = balances[1].date;
-    bankAccount.balance = balances[1].amount;
-  }
-
-  bankAccount.credits.forEach(credit => oldBalance += credit.amount);
-  bankAccount.credits.forEach(debit => oldBalance -= debit.amount);
-
-  if (oldBalance !== bankAccount.balance) {
+  if (oldAmount !== bankAccount.balance) {
     throw new Error('Invalid Receipt : (oldBalance + credits - debits) is not equal to the new balance!');
   }
+}
 
+/**
+ * Parse a whole CFONB 120 receipt file into a BankAccount object.
+ * This function **will perform** a number of check on the content of the file to assert it's validity.
+ * @param receipt an utf8 string representing the raw content of a CFONB 120 receipt file
+ */
+export function parseBankReceipt(receipt: string): BankAccount {
+
+  // split the file into records (lines) and only keep the valid records (must be 120 chars long)
+  const rawLines = receipt.split('\n');
+  const lines = rawLines.filter(line => line.length === 120);
+
+  // assert that the receipt start with an "old balance" record and ends with a "new balance" one
+  if (lines[0].substr(0, 2) !== '01') {
+    throw new Error('Invalid Record : Receipt file must start with an "Old Balance" record (01)!');
+  }
+  if (lines[lines.length - 1].substr(0, 2) !== '07') {
+    throw new Error('Invalid Record : Receipt file must end with an "New Balance" record (07)!');
+  }
+
+  // parse the old and new balance records
+  const oldBalance = parseBalanceRecord(lines[0]);
+  const newBalance = parseBalanceRecord(lines[lines.length -1]);
+
+  // assert that the old and new balance records refers to the same account
+  if (oldBalance.account !== newBalance.account) {
+    throw new Error('Invalid Receipt : The "Old Balance" record and the "New Balance" record must refer to the same account!');
+  }
+
+  // save the old balance for later balances check
+  const oldAmount = oldBalance.amount;
+
+  // create the initial BankAccount with no movement
+  const bankAccount: BankAccount = {
+    account: newBalance.account,
+    balance: newBalance.amount,
+    lastUpdate: newBalance.date,
+    movements: []
+  }
+
+  // if no movements assert balances and return
+  if (lines.length === 2) {
+    assertBalances(bankAccount, oldAmount);
+    return bankAccount;
+  }
+
+
+  // if the file has some movement records the iterate over them (and their complementary records)
+  // a "movement" record (04) is followed by [0-n] "complementary movement info" record (05)
+
+  // avoid the first and last records that are already parsed by the above code
+  for (let i = 1 ; i < lines.length - 1 ; i++) {
+    if (lines[i].substr(0, 2) !== '04') {
+      throw new Error(`Unexpected Record : The current record was expected to be a "Movement" record (04), but it was a (${lines[i].substr(0, 2)}) record!`);
+    } else {
+
+      // parse the current movement record into a Movement object
+      const movIndex = i;
+      const movement = parseMovementRecord(lines[i]);
+      
+      // save the control data of the record, every following complementary record must match this data
+      const control = lines[i].substr(2, 40);
+
+      // go to next record
+      i++;
+
+      // iterate over every potential complementary records
+      while(lines[i].substr(0, 2) === '05') {
+
+        // check that the complementary record match the previously saved control data
+        if (lines[i].substr(2, 40) !== control) {
+          console.log(control, `at line ${movIndex}`);
+          console.log('should be equal to');
+          console.log(lines[i].substr(2, 40), `at line ${i}`);
+          throw new Error(`Incoherent Records : The "Complementary Information" record (#${i}) doesn\'t match the previous "Movement" record (#${movIndex})!`)
+        }
+
+        // parse the complementary record
+        const complementaryInfo = parseComplementaryMovementRecord(lines[i]);
+
+        // add the freshly parsed refs to the Movement object
+        movement.refs = [...movement.refs, ...complementaryInfo];
+
+        // go to next record
+        i++;
+      }
+
+      // add the movement and it's refs to the BankAccount object
+      bankAccount.movements.push(movement);
+
+      // roll back the last increment of the while loop
+      i--;
+    }
+  }
+
+  // final assert & return
+  assertBalances(bankAccount, oldAmount);
   return bankAccount;
 }
