@@ -3,32 +3,32 @@
 <Document xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
   <CstmrCdtTrfInitn>
     <GrpHdr>
-      <MsgId>XTRF1654Z</MsgId>
-      <CreDtTm>2020-01-30T12:56:06</CreDtTm>
+      <MsgId>HP84QR562</MsgId>
+      <CreDtTm>2020-01-31T12:32:25</CreDtTm>
       <NbOfTxs>1</NbOfTxs>
-      <CtrlSum>14.0</CtrlSum>
+      <CtrlSum>8.3</CtrlSum>
       <InitgPty>
-        <Nm>Pulsar</Nm>
+        <Nm>Cascade8</Nm>
       </InitgPty>
     </GrpHdr>
     <PmtInf>
-      <PmtInfId>XTRF1654Z</PmtInfId>
+      <PmtInfId>HP84QR562</PmtInfId>
       <PmtMtd>TRF</PmtMtd>
       <BtchBookg>true</BtchBookg>
       <NbOfTxs>1</NbOfTxs>
-      <CtrlSum>14.0</CtrlSum>
+      <CtrlSum>8.3</CtrlSum>
       <PmtTpInf>
         <SvcLvl>
           <Cd>SEPA</Cd>
         </SvcLvl>
       </PmtTpInf>
-      <ReqdExctnDt>2020-01-30</ReqdExctnDt>
+      <ReqdExctnDt>2020-01-31</ReqdExctnDt>
       <Dbtr>
-        <Nm>Pulsar</Nm>
+        <Nm>Cascade8</Nm>
       </Dbtr>
       <DbtrAcct>
         <Id>
-          <IBAN>FR7630788001000889066000463</IBAN>
+          <IBAN>FR7630788001000889066000366</IBAN>
         </Id>
       </DbtrAcct>
       <DbtrAgt>
@@ -39,10 +39,10 @@
       <ChrgBr>SLEV</ChrgBr>
       <CdtTrfTxInf>
         <PmtId>
-          <EndToEndId>XTRF1654Z</EndToEndId>
+          <EndToEndId>HP84QR562</EndToEndId>
         </PmtId>
         <Amt>
-          <InstdAmt Ccy="EUR">14.0</InstdAmt>
+          <InstdAmt Ccy="EUR">8.3</InstdAmt>
         </Amt>
         <CdtrAgt>
           <FinInstnId>
@@ -50,11 +50,11 @@
           </FinInstnId>
         </CdtrAgt>
         <Cdtr>
-          <Nm>Cascade8</Nm>
+          <Nm>Pulsar</Nm>
         </Cdtr>
         <CdtrAcct>
           <Id>
-            <IBAN>FR7630788001000889066000366</IBAN>
+            <IBAN>FR7630788001000889066000463</IBAN>
           </Id>
         </CdtrAcct>
       </CdtTrfTxInf>
