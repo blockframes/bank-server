@@ -67,3 +67,12 @@ node_modules/
 build/
 
 src/environment/env.ts
+
+ebics-client/keys
+ebics-client/log
+ebics-client/serialized
+ebics-client/ssl
+ebics-client/users
+ebics-client/ebics.txt
+
+tmp/

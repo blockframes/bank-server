@@ -17,3 +17,21 @@ export const ftpsCredentials = {
   port: 9999999999999999999999,
   additionalLftpCommands: 'TODO CHANGE ME'
 }
+
+// Quorum
+// ========
+export const quorum = {
+  archipelNode: {
+    privateFor: 'TODO CHANGE ME',
+  },
+  pulsarlNode: {
+    privateFor: 'TODO CHANGE ME',
+  },
+  bankNode: {
+    url: 'TODO CHANGE ME',
+    user: 'TODO CHANGE ME',
+    privateFor: 'TODO CHANGE ME',
+    ethAddress: 'TODO CHANGE ME',
+  },
+  password: 'TODO CHANGE ME',
+}

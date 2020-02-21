@@ -38,6 +38,8 @@ export async function initTemporaryStorage() {
 }
 
 export async function clearTemporaryStorage() {
+  console.warn('This function has been disabled to prevent deleting potentially needed files!');
+  return;
   try {
     const fileNames = await readdirAsync(receiptFolder);
     await fileNames.forEach(async name => await unlinkAsync(`${receiptFolder}/${name}`));

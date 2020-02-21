@@ -17,6 +17,9 @@
     "typescript": "^3.7.5"
   },
   "dependencies": {
+    "@ethersproject/abi": "^5.0.0-beta.145",
+    "@ethersproject/hash": "^5.0.0-beta.133",
+    "@ethersproject/providers": "^5.0.0-beta.153",
     "@types/ftps": "^1.1.0",
     "@types/iban": "0.0.30",
     "@types/node": "^13.5.0",

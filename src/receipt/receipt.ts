@@ -7,7 +7,7 @@ interface Balance {
 }
 
 interface Movement {
-  otherPartyRIB: string;
+  // otherPartyRIB: string;
   otherPartyName: string;
   amount: number;
   isCredit: boolean;
@@ -21,6 +21,15 @@ export interface BankAccount {
   balance: number;
   lastUpdate: Date;
   movements: Movement[];
+}
+
+export interface ExpectedPayment {
+  fromParty: string, // name
+  toAccount: string, // bank account number
+  amount: number, // the amount
+  ref: string, // some reference string
+  contractAddress: string, // movie smart-contract
+  stakeholdersPrivateFor: string[], // privateFor list
 }
 
 /**
@@ -204,7 +213,7 @@ function parseMovementRecord(line: string): Movement {
   }
   
   return {
-    otherPartyRIB: rib,
+    // otherPartyRIB: rib,
     otherPartyName: label,
     amount,
     isCredit,
@@ -338,4 +347,92 @@ export function parseBankReceipt(receipt: string): BankAccount {
   // final assert & return
   assertBalances(bankAccount, oldAmount);
   return bankAccount;
+}
+
+export function parseBankFile(content: string) {
+
+  // split the file into records (lines) and only keep the valid records (must be 120 chars long)
+  const rawLines = content.split('\n');
+  const lines = rawLines.filter(line => line.length === 120);
+
+  const receipts: string[][] = [[]];
+  let currentReceipt = 0;
+
+  lines.forEach(line => {
+    receipts[currentReceipt].push(line);
+    if (line.substr(0, 2) === '07') {
+      receipts.push([]); // add a new array for the next receipt, (if it was the last, we will need to pop it)
+      currentReceipt++;
+    }
+  });
+
+  receipts.pop(); // remove the extra array
+
+  return receipts.map(receipt => receipt.join('\n'));
+}
+
+/**
+ * Takes an array of various bank accounts and split it by account numbers.
+ * This function return a Record of Arrays (containing bank accounts).
+ * The Record is indexed by account number.
+ * This function is useful to separate different account before performing a merge
+ * @example
+ * const accounts = [ account_A_0, account_B_0, account_A_1, account_B_1 ];
+ * const result = splitBankAccounts(accounts);
+ * // result = {
+ * //  'account_A': [account_A_0, account_A_1],
+ * //  'account_B': [account_B_0, account_B_1],
+ * // }
+*/
+export function splitBankAccounts(bankAccounts: BankAccount[]) {
+
+  const result: Record<string, BankAccount[]> = {};
+
+  bankAccounts.forEach(bankAccount => {
+    if (!result[bankAccount.account]) {
+      result[bankAccount.account] = [bankAccount];
+    } else {
+      result[bankAccount.account].push(bankAccount);
+    }
+  });
+
+  return result;
+}
+
+export function mergeBankAccounts(bankAccounts: BankAccount[]) {
+
+  // assert that every account from the params refer to the same account number
+  const accountNumber = bankAccounts[0].account;
+  bankAccounts.forEach(bankAccount => {
+    if (bankAccount.account !== accountNumber) {
+      throw new Error(`Unexpected Account : You are trying to merge bank account from different account number, try to split before merging!`);
+    }
+  });
+
+  const result = bankAccounts[0];
+  bankAccounts.forEach((bankAccount, i) => {
+    if (i !== 0) {
+      result.movements.push(...bankAccount.movements);
+      if (bankAccount.lastUpdate > result.lastUpdate) {
+        result.balance = bankAccount.balance;
+        result.lastUpdate = bankAccount.lastUpdate;
+      }
+    }
+  });
+
+  return result;
+}
+
+export function matchPayment(expectedPayment: ExpectedPayment, incomingPayment: Movement) {
+  const isCredit = incomingPayment.isCredit;
+  const amountMatch = incomingPayment.amount === expectedPayment.amount;
+  const partyMatch = incomingPayment.otherPartyName.includes(expectedPayment.fromParty);
+  const refMatch = incomingPayment.refs.some(ref => ref.includes(expectedPayment.ref));
+
+  console.log(isCredit, amountMatch, partyMatch, refMatch);
+  
+  if (isCredit && amountMatch && partyMatch && refMatch) {
+    return true;
+  }
+  return false;
 }
