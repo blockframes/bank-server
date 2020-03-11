@@ -10,7 +10,7 @@ export interface QuorumNodeCredentials {
   user: string;
 }
 
-function quorumProvider(credential: QuorumNodeCredentials, password: string) {
+export function quorumProvider(credential: QuorumNodeCredentials, password: string) {
   return new JsonRpcProvider({
     url: credential.url,
     user: credential.user,
@@ -66,12 +66,21 @@ export async function sendPaymentToQuorum(
     ], // this transaction is private between us (archipel), every stakeholders (pulsar) and the bank (who is sending the tx)
   }
   const txHash = await provider.send('eth_sendTransaction', [tx]);
-  const txReceipt = await provider.getTransaction(txHash) as any;
+  const txResponse = await provider.getTransaction(txHash);
 
   // logging to Firebase function's console
   console.log(`quorum movie smart-contract payment sent ! proof (only for authorized nodes) : ${txHash}`);
 
-  return txReceipt;
+  return txResponse;
 }
 
-// TODO Listeners
+
+export function getEventFilter() {
+  return {
+    fromBlock: 0,
+    toBlock: 'latest',
+    topics: [
+      keccak256('InitiatePayment(address,uint256,uint256,string)')
+    ]
+  }
+}

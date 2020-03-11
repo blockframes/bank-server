@@ -1,4 +1,4 @@
-import { getRIB, parseInterBankOperationCode } from "../utils/utils"; // TODO why is this in utils ? is it use elsewhere ? if not move ii to this file
+import { getRIB, parseInterBankOperationCode } from "../utils/utils"; // TODO why is this in utils ? is it use elsewhere ? if not move it to this file
 
 interface Balance {
   account: string;
@@ -6,7 +6,7 @@ interface Balance {
   date: Date;
 }
 
-interface Movement {
+export interface Movement {
   // otherPartyRIB: string;
   otherPartyName: string;
   amount: number;
@@ -24,12 +24,13 @@ export interface BankAccount {
 }
 
 export interface ExpectedPayment {
+  invoiceId: string;
   fromParty: string, // name
-  toAccount: string, // bank account number
+  // toAccount: string, // bank account number
   amount: number, // the amount
   ref: string, // some reference string
-  contractAddress: string, // movie smart-contract
-  stakeholdersPrivateFor: string[], // privateFor list
+  // contractAddress: string, // movie smart-contract
+  // stakeholdersPrivateFor: string[], // privateFor list
 }
 
 /**
@@ -251,9 +252,9 @@ function assertBalances(bankAccount: BankAccount, oldAmount: number) {
 }
 
 /**
- * Parse a whole CFONB 120 receipt file into a BankAccount object.
- * This function **will perform** a number of check on the content of the file to assert it's validity.
- * @param receipt an utf8 string representing the raw content of a CFONB 120 receipt file
+ * Parse a whole CFONB 120 receipt into a BankAccount object.
+ * This function **will perform** a number of check on the content of receipt to assert it's validity.
+ * @param receipt an utf8 string representing the raw content of a CFONB 120 receipt
  */
 export function parseBankReceipt(receipt: string): BankAccount {
 
@@ -399,6 +400,20 @@ export function splitBankAccounts(bankAccounts: BankAccount[]) {
   return result;
 }
 
+/**
+ * This function takes different parts of the history of an account and merge them into a single bank account object
+ * @param bankAccounts an array of bank accounts object, **THEY SHOULD ALL SHARE THE SAME ACCOUNT NUMBER**
+ * @example
+ * const accounts = [
+ *  { accountNumber: 1234, movements: [A, B] },
+ *  { accountNumber: 1234, movements: [C, D] },
+ * ];
+ * const merged = mergeBankAccounts(accounts);
+ * // {
+ * //   accountNumber: 1234,
+ * //   movements: [A, B, C, D]
+ * // }
+ */
 export function mergeBankAccounts(bankAccounts: BankAccount[]) {
 
   // assert that every account from the params refer to the same account number
@@ -423,6 +438,11 @@ export function mergeBankAccounts(bankAccounts: BankAccount[]) {
   return result;
 }
 
+
+// ! THIS IS A CRITICAL FUNCTION, BE SURE TO BATTLE TEST IT IN REAL (but closed) PROD ENVIRONNEMENT
+/**
+ * Matching function that try to see if an expected payment correspond to an incoming payment
+ */
 export function matchPayment(expectedPayment: ExpectedPayment, incomingPayment: Movement) {
   const isCredit = incomingPayment.isCredit;
   const amountMatch = incomingPayment.amount === expectedPayment.amount;

@@ -82,4 +82,18 @@ export async function downloadReceiptsFromEbics() {
   return filePath;
 }
 
-// TODO file upload
+export async function uploadPaymentToEbics(filePath: string) {
+
+  try {
+    await accessAsync(filePath);
+  } catch(error) {
+    throw new Error('\n\nPayment File not found or cannot be accessed!\n\n');
+  }
+
+  try {
+    await invokeEbics({command: '--ful --input', filePath})
+  } catch (error) {
+    console.log('\n\nThe upload of payment file has failed!\n\n');
+    throw new Error(error);
+  }
+}

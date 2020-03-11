@@ -76,3 +76,5 @@ ebics-client/users
 ebics-client/ebics.txt
 
 tmp/
+
+google_service_account_private_key.json
