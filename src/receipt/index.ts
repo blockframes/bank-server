@@ -137,7 +137,7 @@ async function main() {
             console.log(`sending transaction for $${info.amount} to the movie @ ${info.ethContractAddress} `);
             // ! Quorum (solidity) can only handle integers, so we multiply amount by 1000 to preserve decimals
             // ! DO NOT FORGET to divide by 1000 on the other side
-            const txResponse = await sendPaymentToQuorum(info.ethContractAddress, info.stakeholdersPrivateFor, fromParty, Math.floor(info.amount * 1000));
+            const txResponse = await sendPaymentToQuorum(info.ethContractAddress, info.stakeholdersPrivateFor, `${fromParty}-${ref}`, Math.floor(info.amount * 1000));
             return txResponse;
           });
 

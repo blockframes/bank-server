@@ -1,7 +1,7 @@
 
 import { isValid } from 'iban';
 
-export interface paymentParty {
+export interface PaymentParty {
   companyName: string;
   bic: string;
   iban: string;
@@ -15,7 +15,7 @@ function isPrintableASCII(value: string) {
   return /^[\x20-\x7E]{2,60}$/.test(value);
 }
 
-function assertParty(party: paymentParty) {
+function assertParty(party: PaymentParty) {
   if (!isValid(party.iban)) {
     throw new Error(`Invalid IBAN : "${party.iban}" is an invalid IBAN!`);
   }
@@ -58,7 +58,7 @@ function assertReference(reference: string) {
   }
 }
 
-export function createPaymentXML(from: paymentParty, to: paymentParty, amount: string, reference: string) {
+export function createPaymentXML(from: PaymentParty, to: PaymentParty, amount: string, reference: string) {
 
   assertParty(from);
   assertParty(to);

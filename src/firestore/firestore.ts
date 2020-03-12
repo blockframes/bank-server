@@ -1,6 +1,7 @@
 
 import { initializeApp } from 'firebase-admin';
 import { ExpectedPayment, Movement } from '../receipt/receipt';
+import { PaymentParty } from '../payment/payment';
 
 const app = initializeApp();
 const db = app.firestore();
@@ -118,4 +119,23 @@ export async function persistUnmatchedPayment(payment: {account: string, movemen
     console.error(payment);
     throw error;
   }
+}
+
+export async function retrieveBankAccountFromEthAddress(ethAddress: string): Promise<PaymentParty> {
+  const nodeSnapshot = await db.collection('quorumNodes').doc(ethAddress).get();
+  const nodeData = nodeSnapshot.data();
+
+  if (!nodeData) {
+    throw new Error(`Quorum Node Not Found : There is no node with address ${ethAddress}!`);
+  }
+
+  const orgId = nodeData.orgId;
+  const orgSnapshot = await db.collection('orgs').doc(orgId).get();
+  const orgData = orgSnapshot.data();
+
+  if (!orgData) {
+    throw new Error(`Organization Not Found : There is no org with id ${orgId}!`);
+  }
+
+  return { companyName: orgData.account.name, bic: orgData.account.BIC, iban: orgData.account.IBAN }
 }

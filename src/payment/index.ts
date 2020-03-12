@@ -1,19 +1,18 @@
 
-
-// import { promisify } from 'util';
-// import { writeFile } from 'fs';
-// import { paymentParty, createPaymentXML } from './payment';
+import { promisify } from 'util';
+import { writeFile } from 'fs';
 
 import { quorumProvider, getEventFilter } from '../quorum/quorum';
 import { quorum } from '../environment/env';
 import { Log } from '@ethersproject/providers';
 import { AbiCoder } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber'
-import { initTemporaryStorage } from '../storage/storage';
+import { initTemporaryStorage, paymentFolder } from '../storage/storage';
 import { checkEbicsProcess, uploadPaymentToEbics } from '../ebics/ebics';
-import { paymentParty } from './payment';
+import { PaymentParty, createPaymentXML } from './payment';
+import { retrieveBankAccountFromEthAddress } from '../firestore/firestore';
 
-// const asyncWrite = promisify(writeFile);
+const asyncWrite = promisify(writeFile);
 
 async function main() {
 
@@ -29,7 +28,7 @@ async function main() {
   const eventFilter = getEventFilter();
   const abiCoder = new AbiCoder();
   console.log('Ready! Awaiting payment events...');
-  provider.on(eventFilter, (event: Log) => {
+  provider.on(eventFilter, async (event: Log) => {
     const movieContract = event.address;
     const [buyer] = abiCoder.decode(['string'], event.data);
     const [_, rawShareOwner, rawPercentage, rawAmount] = event.topics;
@@ -40,56 +39,28 @@ async function main() {
     const amountToSend = amount / 100 * percentage;
 
     console.log(`${shareOwner} received a payment from ${buyer} for the movie ${movieContract} : ${percentage}% of $${amount} = ${amountToSend}`);
-  
-    // create a payment file
     
     // Archipel Account
-    const from: paymentParty = { // TODO get from config
+    const from: PaymentParty = { // TODO get from config
       companyName: 'Cascade8',
       bic: 'NSMBFRPPXXX',
       iban: 'FR7630788001000889066000366'
     }
 
-    // TODO convert quorum node's eth address to an org then to a bankAccount
-    // const to: paymentParty = {
-    //   companyName: 'Pulsar',
-    //   bic: 'NSMBFRPPXXX',
-    //   iban: 'FR7630788001000889066000463'
-    // }
+    const to = await retrieveBankAccountFromEthAddress(shareOwner);
 
-    // const xml = createPaymentXML(from, to, '12.3', 'LOTR');
-    // const filePath = 
-    // await asyncWrite(filePath, xml);
-    // console.log('file written !');
+    const xml = createPaymentXML(from, to, `${amountToSend}`, buyer);
+    const filePath = `${paymentFolder}/${buyer}-${amountToSend}-${to.companyName}-${Date.now()}.xml`;
+    await asyncWrite(filePath, xml);
+    console.log('file written !');
 
-    // await uploadPaymentToEbics(filePath);
-    // console.log('payment sent !');
+    console.log('sending sepa payment order to the bank');
+    // await uploadPaymentToEbics(filePath); // ! UNCOMMENT FOR PROD
+    console.log('payment sent !');
 
-    // FIRESTORE
+    // TODO FIRESTORE mark payment has sent ?
+
   });
-
-  // TODO ON EVENT CALCULATE FINAL AMOUNT, GENERATE PAYMENT XML, SEND IT TO BANK
-  
-  // create a payment file
-  
-  // const from: paymentParty = {
-  //   companyName: 'Cascade8',
-  //   bic: 'NSMBFRPPXXX',
-  //   iban: 'FR7630788001000889066000366'
-  // }
-  // const to: paymentParty = {
-  //   companyName: 'Pulsar',
-  //   bic: 'NSMBFRPPXXX',
-  //   iban: 'FR7630788001000889066000463'
-  // }
-  // const xml = createPaymentXML(from, to, '12.3', 'LOTR'); // sent 28/01/20
-  // const xml = createPaymentXML(to, from, '14.0', 'XTRF1654Z'); // sent 30/01/20
-  // const xml = createPaymentXML(from, to, '8.3', 'HP84QR562'); // sent 31/01/20
-  // const xml = createPaymentXML(from, to, '11.1', '785AZ247E'); // sent 4/01/20
-  // const xml = createPaymentXML(from, to, '11.1', 'AQPD8E1Z3'); // sent 4/01/20
-  // const xml = createPaymentXML(to, from, '19.95', '1QSDSDF5X'); // TODO send 5/02/20
-  // await asyncWrite('./example/payment/sepa_test.xml', xml);
-  // console.log('file written !');
 }
 
 main();
