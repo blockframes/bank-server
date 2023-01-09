@@ -25,7 +25,7 @@
     "@types/iban": "0.0.30",
     "@types/node": "^13.7.6",
     "dotenv": "^8.2.0",
-    "firebase-admin": "^8.9.2",
+    "firebase-admin": "^11.4.1",
     "ftps": "^1.1.1",
     "iban": "0.0.12"
   }
